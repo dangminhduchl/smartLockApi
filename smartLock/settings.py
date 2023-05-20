@@ -26,6 +26,8 @@ SECRET_KEY = 'django-insecure-95jrn8x(8$3akm=zok*9_!-n$g+z_+_ei)_qa_!a5a)u9p=pe!
 DEBUG = True
 
 ALLOWED_HOSTS = []
+CORS_ORIGIN_ALLOW_ALL = True
+
 
 
 # Application definition
@@ -40,9 +42,14 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'user',
+    'lockControl',
+    'channels',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -138,4 +145,16 @@ REST_FRAMEWORK = {
 IMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
+
+MQTT_HOST = '127.0.0.1'
+MQTT_PORT = 1883
+MQTT_TOPIC_STATUS = "status"
+MQTT_TOPIC_CONTROL = "control"
+
+ASGI_APPLICATION = 'smartLock.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
 }

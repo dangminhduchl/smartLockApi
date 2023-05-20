@@ -10,7 +10,7 @@ ap = argparse.ArgumentParser()
 # đường dẫn đến file encodings đã lưu
 ap.add_argument("-e", "--encodings", required=True, help="path to the serialized db of facial encodings")
 # nếu muốn lưu video từ webcam
-ap.add_argument("-o", "--output", type=str, help="path to the output video")
+# ap.add_argument("-o", "--output", type=str, help="path to the output video")
 ap.add_argument("-y", "--display", type=int, default=1, help="whether or not to display output frame to screen")
 # nếu chạy trên CPU hay embedding devices thì để hog, còn khi tạo encoding vẫn dùng cnn cho chính xác
 # ko có GPU thì nên để hog thôi nhé, cứ thử xem sao
@@ -19,7 +19,10 @@ args = vars(ap.parse_args())
 
 # load the known faces and encodings
 print("[INFO] loading encodings...")
-data = pickle.loads(open(args["encodings"], "rb"))      # loads - load từ file
+
+data = None
+with open(args["encodings"], "rb") as f:
+    data = pickle.load(f) # loads - load từ file
 
 # Khởi tạo video stream và pointer to the output video file, để camera warm up một chút
 print("[INFO] starting video stream...")
@@ -81,10 +84,6 @@ while True:
     # Nên nhớ recognition_face trả bounding boxes ở dạng (top, rights, bottom, left)
     for ((top, right, bottom, left), name) in zip(boxes, names):
         """ Do đang làm việc với rgb đã resize rồi nên cần rescale về ảnh gốc (frame), nhớ chuyển về int """
-        top = int(top * r)
-        right = int(right * r)
-        bottom = int(bottom * r)
-        left = int(left * r)
 
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
         y = top - 15 if top - 15 > 15 else top + 15
@@ -92,9 +91,9 @@ while True:
         cv2.putText(frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 1)
 
     """ Nếu writer=None và mình muốn lưu video thì lưu vào witer"""
-    if writer == None and args["output"] is not None:   # nếu ko truyền vào nó cho là None
-        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-        writer = cv2.VideoWriter(args["output"], fourcc, 20, (frame.shape[1], frame.shape[0]), True)    # 20 à frames
+    # if writer == None and args["output"] is not None:   # nếu ko truyền vào nó cho là None
+    #     fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+    #     writer = cv2.VideoWriter(args["output"], fourcc, 20, (frame.shape[1], frame.shape[0]), True)    # 20 à frames
 
     if writer is not None:  # tiếp tục ghi frame đã chèn bboxes, name vào
         writer.write(frame)
