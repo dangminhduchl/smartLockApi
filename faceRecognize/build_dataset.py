@@ -6,7 +6,6 @@ import cv2
 import os
 
 
-def build_dataset()
 ap = argparse.ArgumentParser()
 ap.add_argument("-o", "--output", required=True, help="path to output directory")
 args = vars(ap.parse_args())

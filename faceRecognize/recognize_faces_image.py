@@ -50,6 +50,8 @@ def process_images(base64_images, encoding_file):
                     counts[name] = counts.get(name, 0) + 1
 
                 name = max(counts, key=counts.get)
+            else :
+                name.apend("unknown")
 
             names.append(name)
 
