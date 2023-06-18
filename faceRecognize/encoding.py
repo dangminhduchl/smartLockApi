@@ -9,28 +9,20 @@ import cv2
 import os
 import face_recognition
 
-def encoding(dataset, detection_method, encoding="cnn" ):
-    # ap = argparse.ArgumentParser()
-    # ap.add_argument("-i", "--dataset", required=True, help="path to the directory of faces and images")
-    # # các encodings và names được lưu vào file
-    # ap.add_argument("-e", "--encodings", required=True, help="path to the serrialized db of facial encoding")
-    # # trước khi encode face thì phải detect nó (đây là bước luôn phải làm trong face recognition) - chọn method để detect faces
-    # ap.add_argument("-d", "--detection_method", type=str, default="cnn", help="face detector to use: cnn or hog")
-    # args = vars(ap.parse_args())
 
-    # lấy paths của images trong dataset
+def encoding(dataset, detection_method, encoding):
     print("[INFO] quantifying faces...")
     imagePaths = list(paths.list_images(dataset))
 
-
     # khởi tạo list chứa known encodings và known names (để các test images so sánh)
     # chứa encodings và tên của các images trong dataset
+
     knownEncodings = []
     knownNames = []
 
     # duyệt qua các image paths
     for (i, imagePath) in enumerate(imagePaths):
-        # lấy tên người từ imagepath
+        # lấy id user từ imagepath
         print("[INFO] processing image {}/{}".format(i + 1, len(imagePaths)))
         name = imagePath.split(os.path.sep)[-2]
 
@@ -62,8 +54,8 @@ def encoding(dataset, detection_method, encoding="cnn" ):
     # dump (lưu) the facial encodings + names vào ổ cứng
     print("[INFO] serializing encodings...")
     data = {"encodings": knownEncodings, "names": knownNames}
+
     print(data)
     with open(encoding, "wb") as f:
         pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
     return True
-
