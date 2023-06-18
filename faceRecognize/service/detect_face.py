@@ -1,4 +1,5 @@
 import pickle
+from collections import Counter
 
 import cv2
 import face_recognition
@@ -18,12 +19,24 @@ def recognize_faces(images, encodings_dict):
 
     for image in images:
         face_encodings = detect_face(image)
-
+        names = []
         for face_encoding in face_encodings:
-            for name, encoding in encodings_dict.items():
-                matches = compare_faces(encoding, face_encoding)
-                if True in matches:
-                    recognized_faces.append(name)
+            matches = compare_faces(encodings_dict["encodings"], face_encoding)
+            name = "Unknown"
+
+            if True in matches:
+                matched_indices = [i for (i, b) in enumerate(matches) if b]
+                counts = {}
+
+                for i in matched_indices:
+                    name = encodings_dict["names"][i]
+                    counts[name] = counts.get(name, 0) + 1
+
+                name = max(counts, key=counts.get)
+            else:
+                name.apend("unknown")
+            names.append(name)
+        recognized_faces.append(name)
 
     return recognized_faces
 
@@ -43,3 +56,7 @@ def compare_faces(encoding_list, face_encoding):
     # Sử dụng thư viện face_recognition
     return face_recognition.compare_faces(encoding_list, face_encoding)
 
+def find_most_frequent(lst):
+    counter = Counter(lst)
+    most_frequent = counter.most_common(1)
+    return most_frequent[0][0]
