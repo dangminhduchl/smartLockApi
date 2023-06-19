@@ -19,6 +19,6 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', include('user.urls')),
-    path('device/', include('lockControl.urls'))
-
+    path('device/', include('lockControl.urls')),
+    # path('ws/', include('app_socket.urls'))
 ]

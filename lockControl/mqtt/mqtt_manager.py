@@ -3,6 +3,7 @@ import json
 import paho.mqtt.client as mqtt
 from django.conf import settings
 from ..models import Status
+# from ..views import send_sse_event
 
 class MQTTManager:
     def __init__(self):
@@ -11,9 +12,6 @@ class MQTTManager:
         self.client_receive.on_message = self.on_message_receive
 
         self.client_send = mqtt.Client()
-
-
-        self.client_receive.connect(settings.MQTT_HOST, settings.MQTT_PORT, 60)
 
         self.client_receive.loop_start()
 
@@ -34,6 +32,7 @@ class MQTTManager:
 
                 status = Status(lock=lock, door=door)
                 status.save()
+                # send_sse_event(status_data)
 
                 if lock == 1 and door == 0:
                     self.send_alert_to_user()
@@ -41,7 +40,7 @@ class MQTTManager:
             except json.JSONDecodeError:
                 print('Invalid JSON data received')
 
-    def send_control_to_esp8266(self, lock,door):
+    def send_control_to_esp8266(self, lock,     door):
         control_data = {'lock': lock,'door':door}
         payload = json.dumps(control_data)
         self.client_send.publish(settings.MQTT_TOPIC_CONTROL, payload)
