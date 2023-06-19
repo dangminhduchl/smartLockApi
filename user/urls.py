@@ -1,7 +1,11 @@
 from django.urls import path
-from .views import RegisterView, LoginView
+
+from faceRecognize.views import face_login, register, encoding
+from .views import LoginView
 
 urlpatterns = [
-    path('register/', RegisterView.as_view(), name='register'),
+    path('register/', register, name='register'),
     path('login/', LoginView.as_view(), name='login'),
+    path('face_login/', face_login, name='face_login'),
+    path('encoding/', encoding, name='encoding'),
 ]

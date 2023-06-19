@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -26,6 +27,8 @@ SECRET_KEY = 'django-insecure-95jrn8x(8$3akm=zok*9_!-n$g+z_+_ei)_qa_!a5a)u9p=pe!
 DEBUG = True
 
 ALLOWED_HOSTS = []
+CORS_ORIGIN_ALLOW_ALL = True
+
 
 
 # Application definition
@@ -40,9 +43,14 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'user',
+    'lockControl',
+    'channels',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -139,3 +147,23 @@ IMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
+
+MQTT_HOST = '127.0.0.1'
+MQTT_PORT = 1883
+MQTT_TOPIC_STATUS = "status"
+MQTT_TOPIC_CONTROL = "control"
+
+ASGI_APPLICATION = 'smartLock.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Filesystem Paths
+DATASET_DIR = os.path.join(BASE_DIR, 'dataset')
+ENCODING_DIR = os.path.join(BASE_DIR, 'encoding')
+ENCODING_FILE = os.path.join(ENCODING_DIR, "encoding.pickle")
+CSRF_COOKIE_SECURE = False
