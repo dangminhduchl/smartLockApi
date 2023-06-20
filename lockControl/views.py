@@ -26,17 +26,21 @@ def control_device(request):
     if request.method == 'POST':
         try:
             data = request.POST
-            lock = int(data.get('lock'))
+            lock = int(data)
 
             status = Status.objects.latest('update_at')
             status_data = {
                 'lock': status.lock,
                 'door': status.door
             }
-
+            if lock != status_data.get('lock'):
+                if lock == 1 and status_data.get("door") == 1:
+                    raise ValueError('door must be close before lock')
             mqtt_manager.send_control_to_esp8266(lock, status_data["door"])
 
-            return JsonResponse({'message': 'Control command sent to ESP8266', **status_data}, status=200)
+            after_status = Status.objects.latest('update_at')
+
+            return JsonResponse({'message': 'Control command sent to ESP8266', **after_status}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
