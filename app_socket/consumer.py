@@ -14,6 +14,11 @@ class StatusSocket(WebsocketConsumer):
     _mqtt_client: mqtt.Client
     session: str
 
+    def send_control_to_esp8266(self, lock, door):
+        control_data = {'lock': lock, 'door': door}
+        payload = json.dumps(control_data)
+        self.client_send.publish(settings.MQTT_TOPIC_CONTROL, payload)
+        self.client_send.publish(settings.MQTT_TOPIC_STATUS, payload)
     def _on_mqtt_receive(self, client, userdata, msg: mqtt.MQTTMessage):
         print("received from mqtt")
         message = msg.payload.decode("utf-8")
@@ -36,6 +41,7 @@ class StatusSocket(WebsocketConsumer):
         self._mqtt_client = mqtt.Client()
         self._mqtt_client.on_connect = self.test()
         self._mqtt_client.on_message = self._on_mqtt_receive
+        self._mqtt_client.on_publish = self.send_control_to_esp8266
 
         self._mqtt_client.connect("localhost", settings.MQTT_PORT, 60)
         self._mqtt_client.subscribe(settings.MQTT_TOPIC_STATUS)
