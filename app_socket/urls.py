@@ -1,7 +1,7 @@
-from .consumer import TestSocket
+from .consumer import StatusSocket
 from django.urls import re_path
 
 
 urlpatterns = [
-    re_path("ws/helloworld", TestSocket.as_asgi())
+    re_path("ws/status", StatusSocket.as_asgi())
 ]

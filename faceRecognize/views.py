@@ -34,20 +34,21 @@ def register(request):
         password = request.POST.get('password')
 
         # Tạo một instance mới của User model và lưu vào cơ sở dữ liệu
-        user = User(username=username, email=email, password=password)
+        user = User(username=username, email=email)
+        user.set_password(password)
         user.save()
-
+        if len(request.FILES):
         # Tạo một thư mục mới với tên là ID của user trong dataset
-        user_folder = os.path.join(settings.DATASET_DIR, str(user.id))
-        os.makedirs(user_folder)
+            user_folder = os.path.join(settings.DATASET_DIR, str(user.id))
+            os.makedirs(user_folder)
 
-        # Lưu ảnh vào thư mục vừa tạo
-        for i in range(50):
-            image = request.FILES.get(f'image{i + 1}')
-            image_path = os.path.join(user_folder, f'image{i + 1}.jpg')
-            with open(image_path, 'wb') as f:
-                for chunk in image.chunks():
-                    f.write(chunk)
+            # Lưu ảnh vào thư mục vừa tạo
+            for i in range(50):
+                image = request.FILES.get(f'image{i + 1}')
+                image_path = os.path.join(user_folder, f'image{i + 1}.jpg')
+                with open(image_path, 'wb') as f:
+                    for chunk in image.chunks():
+                        f.write(chunk)
 
         return JsonResponse({'message': 'Registration successful'})
     else:
