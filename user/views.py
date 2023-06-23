@@ -17,6 +17,16 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+def generate_tokens(user):
+    refresh = RefreshToken.for_user(user)
+
+    # Thêm tên người dùng vào payload của access token
+    refresh['name'] = user.username
+
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 class LoginView(APIView):
     serializer_class = LoginSerializer
 
@@ -27,11 +37,8 @@ class LoginView(APIView):
             password = serializer.validated_data['password']
             user = authenticate(username=username, password=password)
             if user:
-                refresh = RefreshToken.for_user(user)
-                return Response({
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                })
+                tokens = generate_tokens(user)
+                return Response(tokens)
             else:
                 return Response({'error': 'Invalid username or password'}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
