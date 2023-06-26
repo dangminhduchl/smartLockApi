@@ -48,13 +48,11 @@ class StatusSocket(WebsocketConsumer):
         self._mqtt_client.loop_start()
         self.session = uuid.uuid1().__str__()
         self.accept()
-        self.send(text_data="Hello, world!")
         self.send(text_data=self.session)
 
     def receive(self, text_data=None, bytes_data=None):
         print("Received text")
         print(self.session)
-        self.send(text_data="Hello")
 
 class NoticeSocket(WebsocketConsumer):
     def _on_mqtt_receive(self, client, userdata, msg: mqtt.MQTTMessage):
@@ -77,5 +75,4 @@ class NoticeSocket(WebsocketConsumer):
     def receive(self, text_data=None, bytes_data=None):
         print("Received text")
         print(self.session)
-        self.send(text_data="Hello")
 
