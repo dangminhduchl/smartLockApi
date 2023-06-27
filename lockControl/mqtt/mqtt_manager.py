@@ -40,8 +40,8 @@ class MQTTManager:
             except json.JSONDecodeError:
                 print('Invalid JSON data received')
 
-    def send_control_to_esp8266(self, lock,     door):
-        control_data = {'lock': lock,'door':door}
+    def send_control_to_esp8266(self, lock, door):
+        control_data = {'lock': lock, 'door': door}
         payload = json.dumps(control_data)
         self.client_send.publish(settings.MQTT_TOPIC_CONTROL, payload)
         self.client_send.publish(settings.MQTT_TOPIC_STATUS, payload)

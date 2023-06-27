@@ -154,12 +154,17 @@ MQTT_PORT = 1883
 MQTT_TOPIC_STATUS = "status"
 MQTT_TOPIC_CONTROL = "control"
 
+SERCURITY_ALERT = "Somethong went wrong, the door is open even though it's still locked"
+
+
 ASGI_APPLICATION = 'smartLock.asgi.application'
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     },
 }
+
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

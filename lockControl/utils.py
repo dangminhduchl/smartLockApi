@@ -1,3 +1,5 @@
-def send_sse_event(event_data, connected_clients):
-    for client in connected_clients:
-        client.write('data: {}\n\n'.format(event_data))
+def danger_check_status(status):
+    print("!")
+    return status.get("lock") and not status.get("door")
+
+
