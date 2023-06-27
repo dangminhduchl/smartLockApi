@@ -23,7 +23,7 @@ class StatusSocket(WebsocketConsumer):
         print("received from mqtt")
         message = msg.payload.decode("utf-8")
         status = convert_status_to_json(message)
-        status_obj = Status.objects.latest("update_at")
+        status_obj = Status.objects.get(pk=45)
         status_obj.lock = status.get("lock")
         status_obj.door = status.get("door")
         status_obj.save()
@@ -43,7 +43,7 @@ class StatusSocket(WebsocketConsumer):
         self._mqtt_client.on_message = self._on_mqtt_receive
         self._mqtt_client.on_publish = self.send_control_to_esp8266
 
-        self._mqtt_client.connect("localhost", settings.MQTT_PORT, 60)
+        self._mqtt_client.connect(settings.MQTT_HOST, settings.MQTT_PORT, 60)
         self._mqtt_client.subscribe(settings.MQTT_TOPIC_STATUS)
         self._mqtt_client.loop_start()
         self.session = uuid.uuid1().__str__()

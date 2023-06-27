@@ -3,7 +3,6 @@ import json
 import paho.mqtt.client as mqtt
 from django.conf import settings
 from ..models import Status
-# from ..views import send_sse_event
 
 class MQTTManager:
     def __init__(self):
