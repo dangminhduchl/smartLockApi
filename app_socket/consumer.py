@@ -37,7 +37,6 @@ class StatusSocket(WebsocketConsumer):
 
     def connect(self):
         print("Connected to websocket")
-
         self._mqtt_client = mqtt.Client()
         self._mqtt_client.on_connect = self.test()
         self._mqtt_client.on_message = self._on_mqtt_receive
@@ -46,6 +45,7 @@ class StatusSocket(WebsocketConsumer):
         self._mqtt_client.connect(settings.MQTT_HOST, settings.MQTT_PORT, 60)
         self._mqtt_client.subscribe(settings.MQTT_TOPIC_STATUS)
         self._mqtt_client.loop_start()
+        status = Status.objects.get(pk=45)
         self.session = uuid.uuid1().__str__()
         self.accept()
         self.send(text_data=self.session)

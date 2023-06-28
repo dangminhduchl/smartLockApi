@@ -9,11 +9,9 @@ from rest_framework.views import APIView
 from .models import Status, Request
 from .mqtt.mqtt_manager import MQTTManager
 
-mqtt_manager = MQTTManager()
-
 connected_clients = []
 
-
+mqtt_manager = MQTTManager()
 
 def receive_status(request):
     response = HttpResponse(content_type='text/event-stream')
@@ -45,7 +43,7 @@ class ControlDevice(APIView):
             request_status = Status.objects.create(lock=lock, door=int(status_data["door"]))
             if lock == 1 and status_data.get("door") == 0:
                 raise ValueError('door must be close before lock')
-            mqtt_manager.send_control_to_esp8266(lock, int(status_data["door"]))
+            mqtt_manager.send_control_to_esp8266(lock)
 
             after_status = Status.objects.latest('update_at')
             after_status_data = {
