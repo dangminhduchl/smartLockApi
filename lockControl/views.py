@@ -6,12 +6,11 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from smartLock.utils import RedisSingleton
 from .models import Status, Request
-from .mqtt.mqtt_manager import MQTTManager
 
 connected_clients = []
 
-mqtt_manager = MQTTManager()
 
 def receive_status(request):
     response = HttpResponse(content_type='text/event-stream')
@@ -43,7 +42,8 @@ class ControlDevice(APIView):
             request_status = Status.objects.create(lock=lock, door=int(status_data["door"]))
             if lock == 1 and status_data.get("door") == 0:
                 raise ValueError('door must be close before lock')
-            mqtt_manager.send_control_to_esp8266(lock)
+            redis = RedisSingleton().get_non_async_instance()
+            redis.publish("control", lock)
 
             after_status = Status.objects.latest('update_at')
             after_status_data = {
