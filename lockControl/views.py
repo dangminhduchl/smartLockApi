@@ -6,13 +6,10 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from .models import Status
-from .mqtt.mqtt_manager import MQTTManager
-
-mqtt_manager = MQTTManager()
+from smartLock.utils import RedisSingleton
+from .models import Status, Request
 
 connected_clients = []
-
 
 
 def receive_status(request):
@@ -32,29 +29,29 @@ class ControlDevice(APIView):
 
     @csrf_exempt
     def post(self, request):
-        try:
-            data = request.body.decode('utf-8')
-            data = json.loads(data)
-            lock = data.get("lock")
+        data = request.body.decode('utf-8')
+        data = json.loads(data)
+        lock = data.get("lock")
 
-            status = Status.objects.latest('update_at')
-            status_data = {
-                'lock': status.lock,
-                'door': status.door
-            }
-            if lock != status_data.get('lock'):
-                if lock == 1 and status_data.get("door") == 0:
-                    raise ValueError('door must be close before lock')
-            mqtt_manager.send_control_to_esp8266(lock, int(status_data["door"]))
+        status = Status.objects.latest('update_at')
+        status_data = {
+            'lock': status.lock,
+            'door': status.door
+        }
+        if lock != status_data.get('lock'):
+            request_status = Status.objects.create(lock=lock, door=int(status_data["door"]))
+            if lock == 1 and status_data.get("door") == 0:
+                raise ValueError('door must be close before lock')
+            redis = RedisSingleton().get_non_async_instance()
+            redis.publish("control", lock)
 
             after_status = Status.objects.latest('update_at')
             after_status_data = {
                 'lock': int(after_status.lock),
                 'door': int(after_status.door)
             }
-
+            after_status = Status.objects.create(lock=lock, door=int(status_data["door"]))
+            Request.objects.create(action_id=after_status.id, request_id=request_status.id, user=request.user)
             return JsonResponse({'message': 'Control command sent to ESP8266', **after_status_data}, status=200)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
 
         return JsonResponse({'error': 'Invalid request method'}, status=405)
