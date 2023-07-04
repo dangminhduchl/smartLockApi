@@ -18,12 +18,13 @@ class StatusConsumer(AsyncWebsocketConsumer):
         async for message in redis_pubsub.listen():
             value = await self.redis.get("status")
             # Xử lý message ở đây
-            await self.send(text_data=value.decode("utf-8"))
-            value_dict = json.loads(value.decode("utf-8"))
-            status = await sync_to_async(Status.objects.get)(pk=45)
-            status.lock = value_dict['lock']
-            status.door = value_dict['door']
-            await sync_to_async(status.save)()
+            if value:
+                await self.send(text_data=value.decode("utf-8"))
+                value_dict = json.loads(value.decode("utf-8"))
+                status = await sync_to_async(Status.objects.get)(pk=45)
+                status.lock = value_dict['lock']
+                status.door = value_dict['door']
+                await sync_to_async(status.save)()
 
     def disconnect(self, close_code):
         pass
