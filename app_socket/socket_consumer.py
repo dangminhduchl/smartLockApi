@@ -1,7 +1,12 @@
+import json
+
 import aioredis
+from asgiref.sync import sync_to_async
 from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
 
 import redis.asyncio as redis
+
+from lockControl.models import Status
 from smartLock.utils import RedisSingleton
 
 class StatusConsumer(AsyncWebsocketConsumer):
@@ -14,6 +19,11 @@ class StatusConsumer(AsyncWebsocketConsumer):
             value = await self.redis.get("status")
             # Xử lý message ở đây
             await self.send(text_data=value.decode("utf-8"))
+            value_dict = json.loads(value.decode("utf-8"))
+            status = await sync_to_async(Status.objects.get)(pk=45)
+            status.lock = value_dict['lock']
+            status.door = value_dict['door']
+            await sync_to_async(status.save)()
 
     def disconnect(self, close_code):
         pass
