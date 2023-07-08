@@ -33,7 +33,7 @@ class ControlDevice(APIView):
         data = json.loads(data)
         lock = data.get("lock")
 
-        status = Status.objects.latest('update_at')
+        status = Status.objects.get(pk=45)
         status_data = {
             'lock': status.lock,
             'door': status.door
@@ -45,7 +45,7 @@ class ControlDevice(APIView):
             redis = RedisSingleton().get_non_async_instance()
             redis.publish("control", lock)
 
-            after_status = Status.objects.latest('update_at')
+            after_status = Status.objects.get(pk=45)
             after_status_data = {
                 'lock': int(after_status.lock),
                 'door': int(after_status.door)
