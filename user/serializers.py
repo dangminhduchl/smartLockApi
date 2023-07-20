@@ -1,13 +1,22 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
+from user.models import SmartLockUser
+
 
 class UserSerializer(serializers.ModelSerializer):
+    encoding = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email')
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'encoding']
 
-
+    def get_encoding(self, user):
+        try:
+            smart_lock_user = SmartLockUser.objects.get(id=user.id)
+            return smart_lock_user.encoding
+        except SmartLockUser.DoesNotExist:
+            return False
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 
