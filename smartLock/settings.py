@@ -175,16 +175,5 @@ DATASET_DIR = os.path.join(BASE_DIR, 'dataset')
 ENCODING_DIR = os.path.join(BASE_DIR, 'encoding')
 ENCODING_FILE = os.path.join(ENCODING_DIR, "encoding.pickle")
 CSRF_COOKIE_SECURE = False
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("3.27.65.231", 6379)],
-        },
-    },
-}
-
-
 REDIS_HOST = '3.27.65.231'
 REDIS_PORT = 6379

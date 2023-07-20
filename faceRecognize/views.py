@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from faceRecognize.service.detect_face import load_encodings, recognize_faces, find_most_frequent
 from faceRecognize.service.new_user_encoding import encode_faces
+from user.views import generate_tokens
 
 
 def byte_to_json(byte_data):
@@ -86,12 +87,7 @@ def face_login(request):
         most_frequent_number = find_most_frequent(recognized_faces)
         user = User.objects.filter(id=most_frequent_number).first()
         if user:
-            refresh = RefreshToken.for_user(user)
-            return JsonResponse({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
+            token = generate_tokens(user)
+            return JsonResponse(token)
 
-
-
-    return JsonResponse({'message': 'Invalid request method'})
+        return JsonResponse({'message': 'Invalid request method'})
