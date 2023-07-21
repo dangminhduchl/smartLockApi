@@ -1,15 +1,17 @@
 import json
 
-import aioredis
 from asgiref.sync import sync_to_async
-from channels.generic.websocket import WebsocketConsumer, AsyncWebsocketConsumer
-
-import redis.asyncio as redis
+from channels.generic.websocket import AsyncWebsocketConsumer
 
 from lockControl.models import Status
 from smartLock.utils import RedisSingleton
 
+
 class StatusConsumer(AsyncWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self.redis = None
+
     async def connect(self):
         self.redis = RedisSingleton().get_instance()
         await self.accept()

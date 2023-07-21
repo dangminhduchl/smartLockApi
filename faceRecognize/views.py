@@ -2,17 +2,14 @@ import copy
 import os
 
 from django.conf import settings
-from django.contrib.auth import authenticate
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 import json
 
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-
 from faceRecognize.service.detect_face import load_encodings, recognize_faces, find_most_frequent
-from faceRecognize.service.new_user_encoding import encode_faces
+from faceRecognize.service.new_user_encoding import encode_faces, encode_faces_for_id, delete_encoding_for_id
+from user.views import generate_tokens
 
 
 def byte_to_json(byte_data):
@@ -56,7 +53,7 @@ def register(request):
 
 
 @csrf_exempt
-def encoding(request):
+def encoding_all(request):
     if request.method == 'POST':
         # Lấy thông tin từ request
         username = request.POST.get('id')
@@ -76,6 +73,30 @@ def encoding(request):
 
 
 @csrf_exempt
+def encoding_for_id(request, user_id):
+    if request.method == 'POST':
+        data = encode_faces_for_id(settings.DATASET_DIR, "hog", settings.ENCODING_FILE, user_id)
+        data_copy = copy.deepcopy(data)
+        encodings = data_copy["encodings"]
+
+        # Kiểm tra nếu encodings là mảng numpy
+        encodings = [arr.tolist() for arr in encodings]
+        data_copy["encodings"] = encodings
+        json_data = json.dumps(data_copy)
+
+        return JsonResponse(json_data, safe=False)
+
+@csrf_exempt
+def delete_encoding_for_user(request, user_id):
+    if request.method == 'DELETE':
+        deleted = delete_encoding_for_id(settings.ENCODING_FILE, user_id)
+        if deleted:
+            return JsonResponse({"message": "Encoding for user deleted successfully."})
+        else:
+            return JsonResponse({"error": f"Encoding for user {user_id} not found."}, status=404)
+
+
+@csrf_exempt
 def face_login(request):
     if request.method == 'POST':
         images = []
@@ -86,12 +107,7 @@ def face_login(request):
         most_frequent_number = find_most_frequent(recognized_faces)
         user = User.objects.filter(id=most_frequent_number).first()
         if user:
-            refresh = RefreshToken.for_user(user)
-            return JsonResponse({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
+            token = generate_tokens(user)
+            return JsonResponse(token)
 
-
-
-    return JsonResponse({'message': 'Invalid request method'})
+        return JsonResponse({'message': 'Invalid request method'})

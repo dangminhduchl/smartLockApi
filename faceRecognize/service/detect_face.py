@@ -20,23 +20,24 @@ def recognize_faces(images, encodings_dict):
     for image in images:
         face_encodings = detect_face(image)
         names = []
-        for face_encoding in face_encodings:
-            matches = compare_faces(encodings_dict["encodings"], face_encoding)
-            name = "Unknown"
+        if face_encodings:
+            for face_encoding in face_encodings:
+                matches = compare_faces(encodings_dict["encodings"], face_encoding)
+                name = "Unknown"
 
-            if True in matches:
-                matched_indices = [i for (i, b) in enumerate(matches) if b]
-                counts = {}
+                if True in matches:
+                    matched_indices = [i for (i, b) in enumerate(matches) if b]
+                    counts = {}
 
-                for i in matched_indices:
-                    name = encodings_dict["names"][i]
-                    counts[name] = counts.get(name, 0) + 1
+                    for i in matched_indices:
+                        name = encodings_dict["names"][i]
+                        counts[name] = counts.get(name, 0) + 1
 
-                name = max(counts, key=counts.get)
-            else:
-                name.apend("unknown")
-            names.append(name)
-        recognized_faces.append(name)
+                    name = max(counts, key=counts.get)
+                else:
+                    name.apend("unknown")
+                names.append(name)
+        recognized_faces.append(names)
 
     return recognized_faces
 
@@ -56,7 +57,15 @@ def compare_faces(encoding_list, face_encoding):
     # Sử dụng thư viện face_recognition
     return face_recognition.compare_faces(encoding_list, face_encoding)
 
+
 def find_most_frequent(lst):
-    counter = Counter(lst)
+    if not lst:
+        return None
+
+    flattened_lst = [item for sublist in lst if sublist for item in sublist]
+    if not flattened_lst:
+        return None
+
+    counter = Counter(flattened_lst)
     most_frequent = counter.most_common(1)
     return most_frequent[0][0]
