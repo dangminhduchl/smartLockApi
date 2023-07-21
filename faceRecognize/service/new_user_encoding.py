@@ -1,4 +1,7 @@
+from copy import deepcopy
+
 from django.contrib.auth.models import User
+from django.db import transaction
 from imutils import paths
 import pickle
 import cv2
@@ -14,6 +17,7 @@ def load_existing_encodings(encoding_path):
             data = pickle.load(f)
         known_encodings = data["encodings"]
         known_names = data["names"]
+
     else:
         known_encodings = []
         known_names = []
@@ -47,11 +51,13 @@ def process_user_images(user_path, detection_method, user_id):
     return encodings, names
 
 
+@transaction.atomic
 def encode_faces(dataset_dir, detection_method, encoding_path):
     print("[INFO] Quantifying faces...")
-
     known_encodings, known_names = load_existing_encodings(encoding_path)
-
+    users = SmartLockUser.objects.all().in_bulk(field_name='pk')
+    encoding_users = []
+    encoded_users = []
     for user_dir in os.listdir(dataset_dir):
         user_path = os.path.join(dataset_dir, user_dir)
         if not os.path.isdir(user_path):
@@ -59,9 +65,9 @@ def encode_faces(dataset_dir, detection_method, encoding_path):
 
         user_id = user_dir
 
-        if user_id in known_names:
+        if user_id in known_names or int(user_id) not in users.keys():
             continue
-
+        encoding_users.append(user_id)
         encodings, names = process_user_images(user_path, detection_method, user_id)
 
         known_encodings.extend(encodings)
@@ -70,13 +76,17 @@ def encode_faces(dataset_dir, detection_method, encoding_path):
     data = {"encodings": known_encodings, "names": known_names}
     save_encodings(encoding_path, data)
 
-    set_known_names = set(known_names)
-    encoding_users = [SmartLockUser(id=id, encoding=True) for id in set_known_names]
-    SmartLockUser.objects.bulk_create(encoding_users)
+    for id in encoding_users:
+        if user := users.get(int(id)):
+            user.encode = True
+            encoded_users.append(user)
 
-    return data
+    SmartLockUser.objects.bulk_update(encoded_users, ["encode"])
+
+    return encoding_users
 
 
+@transaction.atomic
 def encode_faces_for_id(dataset_dir, detection_method, encoding_path, user_id):
     user_id = str(user_id)
     known_encodings, known_names = load_existing_encodings(encoding_path)
@@ -96,33 +106,34 @@ def encode_faces_for_id(dataset_dir, detection_method, encoding_path, user_id):
 
         # Kiểm tra xem user có tồn tại trong User model không trước khi tạo SmartLockUser
         try:
-            user = User.objects.get(username=user_id)
-            SmartLockUser.objects.create(user=user, encoding=True)
+            user = SmartLockUser.objects.filter(user_ptr_id=int(user_id)).first()
+            user.encode = True
+            user.save()
+            return user
         except User.DoesNotExist:
             print(f"User with ID {user_id} not found in User model.")
+    return None
 
-    else:
-        data = {"encodings": known_encodings, "names": known_names}
-
-    return data
-
+@transaction.atomic()
 def delete_encoding_for_id(encoding_path, user_id):
     user_id = str(user_id)
     known_encodings, known_names = load_existing_encodings(encoding_path)
 
     if user_id in known_names:
-        user_index = known_names.index(user_id)
-        known_encodings.pop(user_index)
-        known_names.pop(user_index)
+        while user_id in known_names:
+            user_index = known_names.index(user_id)
+            known_encodings.pop(user_index)
+            known_names.pop(user_index)
 
         data = {"encodings": known_encodings, "names": known_names}
         save_encodings(encoding_path, data)
 
         # Kiểm tra xem user có tồn tại trong User model không trước khi xóa SmartLockUser
         try:
-            user = User.objects.get(username=user_id)
-            smart_lock_user = SmartLockUser.objects.get(user=user)
-            smart_lock_user.delete()
+            user = User.objects.get(pk=int(user_id))
+            smart_lock_user = SmartLockUser.objects.filter(user_ptr_id=user.id).first()
+            smart_lock_user.encode = False
+            smart_lock_user.save()
         except User.DoesNotExist:
             print(f"User with ID {user_id} not found in User model.")
         except SmartLockUser.DoesNotExist:
@@ -132,5 +143,3 @@ def delete_encoding_for_id(encoding_path, user_id):
     else:
         print(f"User with ID {user_id} not found in encoding data.")
         return False
-
-

@@ -7,8 +7,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 import json
 
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from faceRecognize.service.detect_face import load_encodings, recognize_faces, find_most_frequent
 from faceRecognize.service.new_user_encoding import encode_faces, encode_faces_for_id, delete_encoding_for_id
+from user.models import SmartLockUser
 from user.views import generate_tokens
 
 
@@ -31,11 +35,11 @@ def register(request):
         password = request.POST.get('password')
 
         # Tạo một instance mới của User model và lưu vào cơ sở dữ liệu
-        user = User(username=username, email=email)
+        user = SmartLockUser(username=username, email=email, encode=False)
         user.set_password(password)
         user.save()
         if len(request.FILES):
-        # Tạo một thư mục mới với tên là ID của user trong dataset
+            # Tạo một thư mục mới với tên là ID của user trong dataset
             user_folder = os.path.join(settings.DATASET_DIR, str(user.id))
             os.makedirs(user_folder)
 
@@ -56,44 +60,25 @@ def register(request):
 def encoding_all(request):
     if request.method == 'POST':
         # Lấy thông tin từ request
-        username = request.POST.get('id')
         data = encode_faces(settings.DATASET_DIR, "hog", settings.ENCODING_FILE)
-        print(type(data["encodings"]), type(data["names"]))
-        print(type(data))
-        print(data)
-        data_copy = copy.deepcopy(data)
-        encodings = data_copy["encodings"]
+        if data:
+            return Response(f"Encoded user {data}", status=200)
+        return Response(f"Can't encode", status=400)
 
-        # Kiểm tra nếu encodings là mảng numpy
-        encodings = [arr.tolist() for arr in encodings]
-        data_copy["encodings"] = encodings
-        json_data = json.dumps(data_copy)
+class EncodingView(APIView):
+    def get(self, request, user_id):
+        id = encode_faces_for_id(settings.DATASET_DIR, "hog", settings.ENCODING_FILE, user_id)
+        if id:
+            return Response(f"Encoded user {id}", status=200)
 
-        return JsonResponse(json_data, safe=False)
+        return Response(f"Can't encoded user {id}", status=400)
 
-
-@csrf_exempt
-def encoding_for_id(request, user_id):
-    if request.method == 'POST':
-        data = encode_faces_for_id(settings.DATASET_DIR, "hog", settings.ENCODING_FILE, user_id)
-        data_copy = copy.deepcopy(data)
-        encodings = data_copy["encodings"]
-
-        # Kiểm tra nếu encodings là mảng numpy
-        encodings = [arr.tolist() for arr in encodings]
-        data_copy["encodings"] = encodings
-        json_data = json.dumps(data_copy)
-
-        return JsonResponse(json_data, safe=False)
-
-@csrf_exempt
-def delete_encoding_for_user(request, user_id):
-    if request.method == 'DELETE':
+    @csrf_exempt
+    def delete(self, request, user_id):
         deleted = delete_encoding_for_id(settings.ENCODING_FILE, user_id)
         if deleted:
             return JsonResponse({"message": "Encoding for user deleted successfully."})
-        else:
-            return JsonResponse({"error": f"Encoding for user {user_id} not found."}, status=404)
+        return JsonResponse({"error": f"Encoding for user {user_id} not found."}, status=404)
 
 
 @csrf_exempt

@@ -1,9 +1,10 @@
-from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+
+from .models import SmartLockUser
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 
 
@@ -46,15 +47,15 @@ class LoginView(APIView):
 
 class AllUserView(APIView):
     def get(self, request):
-        users = User.objects.all()
+        users = SmartLockUser.objects.all()
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
 class UserView(APIView):
     def get_user(self, user_id):
         try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
+            return SmartLockUser.objects.get(pk=user_id)
+        except SmartLockUser.DoesNotExist:
             return None
 
     def get(self, request, user_id):
