@@ -18,11 +18,11 @@ def recognize_faces(images, encodings_dict):
     recognized_faces = []
 
     for image in images:
-        face_encodings = detect_face(image)
+        face_encodings = detect_face(image)  # Giả sử detect_face là hàm nhận diện khuôn mặt từ ảnh.
         names = []
         if face_encodings:
             for face_encoding in face_encodings:
-                matches = compare_faces(encodings_dict["encodings"], face_encoding)
+                matches = compare_faces(encodings_dict["encodings"], face_encoding)  # Giả sử compare_faces là hàm so sánh encoding khuôn mặt.
                 name = "Unknown"
 
                 if True in matches:
@@ -34,9 +34,10 @@ def recognize_faces(images, encodings_dict):
                         counts[name] = counts.get(name, 0) + 1
 
                     name = max(counts, key=counts.get)
-                else:
-                    name.apend("unknown")
                 names.append(name)
+        else:
+            names.append("Unknown")  # Thêm "Unknown" vào danh sách nếu không tìm thấy khuôn mặt nào khớp.
+
         recognized_faces.append(names)
 
     return recognized_faces

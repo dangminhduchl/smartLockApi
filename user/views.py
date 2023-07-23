@@ -1,3 +1,4 @@
+from rest_framework.permissions import IsAdminUser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -24,6 +25,7 @@ def generate_tokens(user):
 
     # Thêm tên người dùng vào payload của access token
     refresh['name'] = user.username
+    refresh['superuser'] = user.is_superuser
 
     return {
         'refresh': str(refresh),
@@ -52,6 +54,7 @@ class AllUserView(APIView):
         return Response(serializer.data)
 
 class UserView(APIView):
+    permission_classes = [IsAdminUser]
     def get_user(self, user_id):
         try:
             return SmartLockUser.objects.get(pk=user_id)
