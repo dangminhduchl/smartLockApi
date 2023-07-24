@@ -8,6 +8,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = SmartLockUser
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active', 'encode']
 
+
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
 

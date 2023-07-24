@@ -1,18 +1,18 @@
 import os
 
 from django.conf import settings
+from django.contrib.auth.decorators import permission_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 import json
 
 from rest_framework import status
-from rest_framework.permissions import IsAdminUser
-from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from faceRecognize.service.detect_face import load_encodings, recognize_faces, find_most_frequent
 from faceRecognize.service.new_user_encoding import encode_faces, encode_faces_for_id, delete_encoding_for_id
+from faceRecognize.ultis import IsSuperUser
 from user.models import SmartLockUser
 from user.views import generate_tokens
 
@@ -58,6 +58,7 @@ def register(request):
 
 
 @csrf_exempt
+@permission_required(IsSuperUser)
 def encoding_all(request):
     if request.method == 'POST':
         # Lấy thông tin từ request
@@ -68,7 +69,7 @@ def encoding_all(request):
 
 
 class EncodingView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsSuperUser]
     def get(self, request, user_id):
         id = encode_faces_for_id(settings.DATASET_DIR, "hog", settings.ENCODING_FILE, user_id)
         if id:
