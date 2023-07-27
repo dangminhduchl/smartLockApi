@@ -1,17 +1,18 @@
-import copy
 import os
 
 from django.conf import settings
+from django.contrib.auth.decorators import permission_required
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 import json
 
-from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.views import APIView
 
 from faceRecognize.service.detect_face import load_encodings, recognize_faces, find_most_frequent
 from faceRecognize.service.new_user_encoding import encode_faces, encode_faces_for_id, delete_encoding_for_id
+from faceRecognize.ultis import IsSuperUser
 from user.models import SmartLockUser
 from user.views import generate_tokens
 
@@ -57,28 +58,32 @@ def register(request):
 
 
 @csrf_exempt
+@permission_required(IsSuperUser)
 def encoding_all(request):
     if request.method == 'POST':
         # Lấy thông tin từ request
         data = encode_faces(settings.DATASET_DIR, "hog", settings.ENCODING_FILE)
         if data:
-            return Response(f"Encoded user {data}", status=200)
-        return Response(f"Can't encode", status=400)
+            return JsonResponse({"message": f"Encoded user {data}"}, status=status.HTTP_200_OK)
+        return JsonResponse({"error": "Can't encode"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class EncodingView(APIView):
+    permission_classes = [IsSuperUser]
     def get(self, request, user_id):
         id = encode_faces_for_id(settings.DATASET_DIR, "hog", settings.ENCODING_FILE, user_id)
         if id:
-            return Response(f"Encoded user {id}", status=200)
+            return JsonResponse({"message": f"Encoded user {id}"}, status=status.HTTP_200_OK)
 
-        return Response(f"Can't encoded user {id}", status=400)
+        return JsonResponse({"message": f"Can't encoded user {id}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @csrf_exempt
     def delete(self, request, user_id):
-        deleted = delete_encoding_for_id(settings.ENCODING_FILE, user_id)
+        user = SmartLockUser.objects.filter(pk=user_id).first()
+        deleted = delete_encoding_for_id(settings.ENCODING_FILE, user)
         if deleted:
-            return JsonResponse({"message": "Encoding for user deleted successfully."})
-        return JsonResponse({"error": f"Encoding for user {user_id} not found."}, status=404)
+            return JsonResponse({"message": f"Encoding for {user} deleted successfully."}, status=status.HTTP_200_OK)
+        return JsonResponse({"error": f"Encoding for user {user} not found."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @csrf_exempt
@@ -87,12 +92,18 @@ def face_login(request):
         images = []
         for i in range(10):
             images.append(request.FILES.get(f'image{i + 1}'))
+
         encodings_dict = load_encodings(settings.ENCODING_FILE)
+        if not encodings_dict:
+            return JsonResponse({'error': 'Encoding file not found'}, status=status.HTTP_401_UNAUTHORIZED)
+
         recognized_faces = recognize_faces(images, encodings_dict)
         most_frequent_number = find_most_frequent(recognized_faces)
-        user = User.objects.filter(id=most_frequent_number).first()
-        if user:
-            token = generate_tokens(user)
-            return JsonResponse(token)
 
-        return JsonResponse({'message': 'Invalid request method'})
+        if most_frequent_number != 'Unknown':
+            user = User.objects.filter(id=most_frequent_number).first()
+            if user:
+                token = generate_tokens(user)
+                return JsonResponse(token, status=status.HTTP_200_OK)
+
+        return JsonResponse({'error': 'Cannot detect face or user not found'}, status=status.HTTP_401_UNAUTHORIZED)

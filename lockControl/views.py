@@ -3,11 +3,13 @@ import json
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from smartLock.utils import RedisSingleton
 from .models import Status, Request
+from .serializer import RequestSerializer
 
 connected_clients = []
 
@@ -55,3 +57,31 @@ class ControlDevice(APIView):
             return JsonResponse({'message': 'Control command sent to ESP8266', **after_status_data}, status=200)
 
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+class HistoryDevice(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Get all requests
+        all_requests = Request.objects.all()
+
+        # Sort the requests based on query parameters (if provided)
+        sort_by = request.GET.get('sort_by', 'created_at')
+        order_by = request.GET.get('order_by', 'desc')  
+        if sort_by:
+            if order_by == 'desc':
+                all_requests = all_requests.order_by(f'-{sort_by}')
+            else:
+                all_requests = all_requests.order_by(sort_by)
+
+        # Initialize the paginator
+        paginator = PageNumberPagination()
+        # Define the number of requests per page (you can adjust this as needed)
+        paginator.page_size = 10
+
+        # Paginate the requests
+        paginated_requests = paginator.paginate_queryset(all_requests, request)
+        serializer = RequestSerializer(paginated_requests, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

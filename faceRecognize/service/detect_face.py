@@ -18,7 +18,7 @@ def recognize_faces(images, encodings_dict):
     recognized_faces = []
 
     for image in images:
-        face_encodings = detect_face(image)
+        face_encodings = detect_face(image)  # Giả sử detect_face là hàm nhận diện khuôn mặt từ ảnh.
         names = []
         if face_encodings:
             for face_encoding in face_encodings:
@@ -34,9 +34,10 @@ def recognize_faces(images, encodings_dict):
                         counts[name] = counts.get(name, 0) + 1
 
                     name = max(counts, key=counts.get)
-                else:
-                    name.apend("unknown")
                 names.append(name)
+        else:
+            names.append("Unknown")  # Thêm "Unknown" vào danh sách nếu không tìm thấy khuôn mặt nào khớp.
+
         recognized_faces.append(names)
 
     return recognized_faces
@@ -55,7 +56,7 @@ def detect_face(image):
 def compare_faces(encoding_list, face_encoding):
     # So sánh encoding khuôn mặt với danh sách encoding và trả về kết quả khớp
     # Sử dụng thư viện face_recognition
-    return face_recognition.compare_faces(encoding_list, face_encoding)
+    return face_recognition.compare_faces(encoding_list, face_encoding, 0.5)
 
 
 def find_most_frequent(lst):
