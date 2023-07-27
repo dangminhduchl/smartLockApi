@@ -53,10 +53,10 @@ class LoginView(APIView):
 class AllUserView(APIView):
 
     def get(self, request):
-        if request.user.is_superuser:
-            users = SmartLockUser.objects.all()
-        else:
-            users = SmartLockUser.objects.filter(id=request.user.id)
+        # if request.user.is_superuser:
+        users = SmartLockUser.objects.all()
+        # else:
+        #     users = SmartLockUser.objects.filter(id=request.user.id)
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
 
