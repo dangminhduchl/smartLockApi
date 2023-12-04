@@ -90,10 +90,10 @@ WSGI_APPLICATION = 'smartLock.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
+        'NAME': 'smartLock',
         'USER': 'postgres',
-        'PASSWORD': '31012000',
-        'HOST': 'database-1.c5o1etjun0pj.ap-southeast-2.rds.amazonaws.com',
+        'PASSWORD': '3101',
+        'HOST': 'postgres_container',
         'PORT': '5432',
     }
 }
