@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+import requests
 
-from .models import SmartLockUser
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, ChangePasswordSerializer
+from .models import SmartLockUser, NFTKey
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, ChangePasswordSerializer, \
+    Web3LoginSerializer, MeSerializer
 
 
 class RegisterView(APIView):
@@ -50,6 +52,49 @@ class LoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class Web3LoginView(APIView):
+    serializer_class = Web3LoginSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            address = serializer.validated_data['address']
+            user = SmartLockUser.objects.filter(username=address)
+            print(user)
+            if not user:
+                user = SmartLockUser(username=address, encode=False)
+                user.save()
+            else:
+                user = user[0]
+
+            # Force nft
+            response = requests.get(
+                f"https://testnets-api.opensea.io/api/v2/chain/avalanche_fuji/account/{address}/nfts?collection=butterfly-791")
+            if response.status_code != 200:
+                return Response({'error': 'No nft'}, status=status.HTTP_401_UNAUTHORIZED)
+            nft_data = response.json()
+            user_nfts = user.nfts.all()
+            user_nfts_dict = {nft.identifier: nft for nft in user_nfts}
+            nft_created = []
+            for data in nft_data.get("nfts"):
+                iden = data.get("identifier")
+                if iden not in user_nfts_dict:
+                    metadata = requests.get(data.get("metadata_url")).json()
+                    nft_created.append(
+                        NFTKey(
+                            identifier=iden,
+                            contract=data.get("contract"),
+                            image_url=metadata.get("image"),
+                            user=user,
+                        )
+                    )
+            if nft_created:
+                NFTKey.objects.bulk_create(nft_created)
+            tokens = generate_tokens(user)
+            return Response(tokens)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class AllUserView(APIView):
 
     def get(self, request):
@@ -62,6 +107,41 @@ class AllUserView(APIView):
 
 
 from rest_framework.permissions import IsAuthenticated
+
+
+class Me(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Force nft
+        response = requests.get(
+            f"https://testnets-api.opensea.io/api/v2/chain/avalanche_fuji/account/{user.username}/nfts?collection=butterfly-791")
+        if response.status_code != 200:
+            return Response({'error': 'No nft'}, status=status.HTTP_401_UNAUTHORIZED)
+        nft_data = response.json()
+        user_nfts = user.nfts.all()
+        user_nfts_dict = {nft.identifier: nft for nft in user_nfts}
+        nft_created = []
+        for data in nft_data.get("nfts"):
+            iden = data.get("identifier")
+            if iden not in user_nfts_dict:
+                metadata = requests.get(data.get("metadata_url")).json()
+                nft_created.append(
+                    NFTKey(
+                        identifier=iden,
+                        contract=data.get("contract"),
+                        image_url=metadata.get("image"),
+                        user=user,
+                    )
+                )
+        if nft_created:
+            NFTKey.objects.bulk_create(nft_created)
+
+        serializer = MeSerializer(user)
+
+        return Response(serializer.data)
 
 
 class UserView(APIView):

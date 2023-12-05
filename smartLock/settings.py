@@ -146,7 +146,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-IMPLE_JWT = {
+SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
@@ -175,5 +175,5 @@ DATASET_DIR = os.path.join(BASE_DIR, 'dataset')
 ENCODING_DIR = os.path.join(BASE_DIR, 'encoding')
 ENCODING_FILE = os.path.join(ENCODING_DIR, "encoding.pickle")
 CSRF_COOKIE_SECURE = False
-REDIS_HOST = '3.27.65.231'
+REDIS_HOST = 'redis_container'
 REDIS_PORT = 6379

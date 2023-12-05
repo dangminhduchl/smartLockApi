@@ -1,5 +1,20 @@
 from rest_framework import serializers
-from user.models import SmartLockUser
+from user.models import SmartLockUser, NFTKey
+from django.contrib.auth.models import User
+
+
+class NFTKeySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NFTKey
+        fields = "__all__"
+
+
+class MeSerializer(serializers.ModelSerializer):
+    nfts = NFTKeySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'is_staff', 'is_active', "nfts"]
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -41,3 +56,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
+
+
+class Web3LoginSerializer(serializers.Serializer):
+    address = serializers.CharField()

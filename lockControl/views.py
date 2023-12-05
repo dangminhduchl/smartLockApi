@@ -1,4 +1,5 @@
 import json
+import requests
 
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
@@ -35,11 +36,24 @@ class ControlDevice(APIView):
         data = json.loads(data)
         lock = data.get("lock")
 
-        status = Status.objects.get(pk=45)
+        status = Status.objects.get(pk=2)
         status_data = {
             'lock': status.lock,
             'door': status.door
         }
+
+        user = request.user
+        response = requests.get(f"https://testnets-api.opensea.io/api/v2/chain/avalanche_fuji/account/{user.username}/nfts?collection=butterfly-791")
+        data = response.json()
+        nfts = data.get("nfts")
+        is_access = False
+        print(nfts)
+        for nft in nfts:
+            if nft.get("identifier") == "4":
+                is_access = True
+        if not is_access:
+            return JsonResponse({'error': 'Invalid Key'}, status=403)
+
         if lock != status_data.get('lock'):
             request_status = Status.objects.create(lock=lock, door=int(status_data["door"]))
             if lock == 1 and status_data.get("door") == 0:
@@ -47,7 +61,7 @@ class ControlDevice(APIView):
             redis = RedisSingleton().get_non_async_instance()
             redis.publish("control", lock)
 
-            after_status = Status.objects.get(pk=45)
+            after_status = Status.objects.get(pk=2)
             after_status_data = {
                 'lock': int(after_status.lock),
                 'door': int(after_status.door)
