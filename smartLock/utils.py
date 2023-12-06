@@ -6,7 +6,7 @@ class RedisSingleton:
     _instance: redis_async.Redis = None
     _non_async_instance: redis.Redis = None
     def __init__(self):
-        self.host = "redis_container"
+        self.host = "redis"
         self.port = 6379
         pass
 

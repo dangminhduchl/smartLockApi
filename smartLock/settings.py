@@ -93,7 +93,7 @@ DATABASES = {
         'NAME': 'smartLock',
         'USER': 'postgres',
         'PASSWORD': '3101',
-        'HOST': 'postgres_container',
+        'HOST': 'postgres',
         'PORT': '5432',
     }
 }
